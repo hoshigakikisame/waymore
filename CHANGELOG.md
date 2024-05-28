@@ -1,5 +1,51 @@
 ## Changelog
 
+- v4.4
+
+  - New
+
+    - When using `-mode R`, if input was used that does find results, but then those reults don't match the input given, then display a message. For example, if input is `www.hackerone.com/xnl` then wayback machine returns links for `http://hackerone.com/xnl` (without the `www.`). These don't match so aren't returned, but a message will give the user and clue as to what to change the input to if they did want those.
+    
+  - Changed
+
+    - BUG FIX:Rewrite the logic in `linksFoundAdd` and correct a typo that always made a runtime error occur and always add a link, without doing the check to see if the domain matches what was searched for (it's rare other URLs are included anyway). Also use new `linksFoundResponseAdd` with similar logic, but remove the prefixed timestamp which occurs with response links.
+    - BUG FIX: If a URL is passed (instead of just a domain) as input for `-mode R` to download archived responses, it would not download anything because it would check the result contains the input, but the default port number is included in wayback results, but not included in the input. This has been corrected.
+    - Remove `argparse` from `setup.py` and `requirements.txt` because it is a standard Python module.
+
+- v4.3
+
+  - Changed
+
+    - Wayback Machine seemed to have made some changes to their CDX API without any notice or documentation. This caused problems getting URLs for `-mode U` because the API pagination no longer worked. If a number of pages cannot be returned, then all links will be retrieved in one request. However, if they "fix" the problem and pagination starts working again, it will revert to previous code that will get results a page at a time.
+    - Although the bug fix for [Github Issue #45](https://github.com/xnl-h4ck3r/waymore/issues/45) appeared to be working fine since the last version, the "changes" made by Wayback machine seemed to have broken that too. The code had to be refactored to work (i.e. don't include the `collapse` parameter at all if `none`), but also no longer works with multiple fields.
+    - When `-co` is used, there is no way to tell how long the results will take from Wayback machine now because all the data is retrieved in one request. While pagination is broken, this will just return `Unknown` but will revert back to previous functionality if pagination is fixed.
+
+- v4.2
+
+  - Changed
+
+    - BUG FIX: [Github Issue #45](https://github.com/xnl-h4ck3r/waymore/issues/45) - When getting archived responses from wayback machine, by default it is supposed to get one capture per day per URL (this interval can be changed with `-ci`). But, it was only getting one response per day, not for all the different URLs per day. Thanks to @zakaria_ounissi for raising this.
+    - BUG FIX: [Github Issue #46](https://github.com/xnl-h4ck3r/waymore/issues/46) - The config `FILTER_URL` list was being applied to links found from all sources, except wayback machine. So if the MIME type wasn't correct, it was possible that links that matched `FILTER_URL` were still included in the output. Thanks to @brutexploiter for raising this.
+
+- v4.1
+
+  - Changed
+
+    - Removed line `from tqdm import tqdm` as it is not needed and will cause errors if not installed.
+
+- v4.0
+
+  - New
+
+    - Add argument `-oijs`/`--output-inline-js`. If passed, and archived responses are requested, all unique scripts from the responses (excluding `.js`, `.csv`, `.xls`, `.xslx`, `.doc`, `.docx`, `.pdf`, `.msi`, `.zip`, `.gzip`, `.gz`, `.tar`, `.rar`, `.json`) will be extracted and written to files `combinedInline{}.js` (in the same response directory) where `{}` will be the number of the file for every 1000 unique scripts. There will also be a file `combinedInlineSrc.txt` written that will contain the `src` value for all inline external scripts.
+    - Exclude SOME downloaded custom 404 responses for `-mode R` if 404 status is to be excluded. The custom 404 pages will be identified by the regex `<title>[^\<]*(404|not found)[^\<]*</title>`.
+    - Add `long_description_content_type` to `setup.py` to upload to PyPi
+    - Add `waymore` to `PyPi` so can be installed with `pip install waymore`
+
+  - Changed
+
+    - When getting the `DEFAULT_OUTPUT_DIR`, use the `os.path.expanduser` to ensure that the full path is used.
+
 - v3.7
 
   - Changed
