@@ -4,3 +4,4 @@ dist/
 waymore.egg-info
 __pycache__
 collinfo.json
+personal.config.yml

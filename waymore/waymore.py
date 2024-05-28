@@ -80,6 +80,8 @@ checkAlienVault = 0
 checkURLScan = 0
 checkVirusTotal = 0
 argsInputHostname = ''
+splitOutputCount = 0
+currentOutFile = ''
 
 # Source Provider URLs
 WAYBACK_URL = 'https://web.archive.org/cdx/search/cdx?url={DOMAIN}&collapse={COLLAPSE}&fl=timestamp,original,mimetype,statuscode,digest'
@@ -695,7 +697,7 @@ def fixArchiveOrgUrl(url):
 
 # Add a link to the linksFound collection
 def linksFoundAdd(link):
-    global linksFound, argsInput, argsInputHostname
+    global currentOutFile, splitOutputCount, linksFound, argsInput, argsInputHostname
     # If the link specifies port 80 or 443, e.g. http://example.com:80, then remove the port 
     try:
         if inputIsDomainANDPath:
@@ -711,6 +713,9 @@ def linksFoundAdd(link):
             linksFound.add(parsed)
     except:
         linksFound.add(link)
+    if len(linksFound) >= 100000:
+        processURLOutput()
+        linksFound.clear()
     
 def processArchiveUrl(url):
     """
@@ -928,12 +933,13 @@ def processArchiveUrl(url):
     except Exception as e:
         writerr(colored('ERROR processArchiveUrl 1:  ' + str(e), 'red'))
 
+
 def processURLOutput():
     """
     Show results of the URL output, i.e. getting URLs from archive.org and commoncrawl.org and write results to file
     """
-    global linksFound, subs, path, argsInput, checkWayback, checkCommonCrawl, checkAlienVault, checkURLScan, checkVirusTotal, DEFAULT_OUTPUT_DIR
-
+    global currentOutFile, splitOutputCount, linksFound, subs, path, argsInput, checkWayback, checkCommonCrawl, checkAlienVault, checkURLScan, checkVirusTotal, DEFAULT_OUTPUT_DIR
+    linksFoundCopy = linksFound.copy()
     try:
         
         if args.check_only:
@@ -955,7 +961,7 @@ def processURLOutput():
                 write(colored('\n-> Getting URLs (e.g. at 1 req/sec) could take more than '+str(days)+' days!!! Consider using arguments -lr, -ci, -from and -to wisely!','red'))
             write('')
         else:
-            linkCount = len(linksFound)
+            linkCount = len(linksFoundCopy)
             write(getSPACER(colored('Links found for ' + subs + argsInput + ': ', 'cyan')+colored(str(linkCount) + ' 🤘','white'))+'\n')
             
             # If -oU / --output-urls was passed then use that file name, else use "waymore.txt" in the path of the .py file
@@ -972,7 +978,12 @@ def processURLOutput():
                 filenameNew = fullPath + 'waymore.new'
                 filenameOld = fullPath + 'waymore.old'
             else:
-                filename = args.output_urls
+                # filename = args.output_urls
+                # if os.path.exists(args.output_urls) and os.path.getsize(args.output_urls) > 200 * 1024 * 1024:
+                if os.path.exists(currentOutFile) and os.path.getsize(currentOutFile) > 200 * 1024 * 1024:
+                    splitOutputCount = splitOutputCount + 1
+                currentOutFile = f'{args.output_urls}-{splitOutputCount}'
+                filename = currentOutFile
                 filenameNew = filename + '.new'
                 filenameOld = filename + '.old'
                 # If the filename has any "/" in it, remove the contents after the last one to just get the path and create the directories if necessary
@@ -1008,7 +1019,7 @@ def processURLOutput():
                         
             try:
                 # Open the output file
-                outFile = open(filename,'w')
+                outFile = open(filename,'a')
             except Exception as e:
                 if verbose():
                     writerr(colored('ERROR processURLOutput 2: ' + str(e), 'red'))
@@ -1017,9 +1028,9 @@ def processURLOutput():
             # Go through all links, and output what was found
             # If the -ra --regex-after was passed then only output if it matches
             outputCount = 0
-            for link in linksFound:
+            for link in linksFoundCopy:
                 try:
-                    if args.regex_after is None or re.search(args.regex_after, link, flags=re.IGNORECASE):
+                    if args.regex_after is None or not re.search(args.regex_after, link, flags=re.IGNORECASE):
                         outFile.write(link + "\n")
                         # If the tool is piped to pass output to something else, then write the link
                         if not sys.stdout.isatty():
