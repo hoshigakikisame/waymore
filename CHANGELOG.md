@@ -1,11 +1,86 @@
 ## Changelog
 
+- v6.1
+
+  - INFO: v6.0 was skipped because there was an error in the version uploaded to PyPi and it cannot be replaced
+
+  - New
+
+    - Get archived responses from URLScan in addition to wayback machine. The same processing to get the links will be done, but the `_id` values will be stored and then the DOM for each response can be retrieved from `https://urlscan.io/dom/{UUID}`. Sometimes the API may not have saved the DOM, so these are just skipped.
+    - BUG FIX: The `-from`/`--from-date` and `-to`/`--to-date` values can take the format `YYYYMMDDhhmmss` (or part of) but wasn't validated that it was a valid date/time. Validation now added.
+    - BUG FIX: The search for links on URLScan wasn't taking into account the `-from` or `-to` fields. These are now used to format the `{DATERANGE}` section in `URLSCAN_URL`.
+    - BUG FIX: If a URL is passed as input, then the links from URLScan would just match the domain, not the URL.
+
+  - Changed
+
+    - Pass the waymore version in the User-Agent when making requests to URLScan.
+    - Rename `index.txt` to `waymore_index.txt` instead, to allow `xnLinKFinder` identify a `waymore` response directory better.
+
+- v5.1
+
+  - BUG FIX: When calling URLScan API, it would sometimes return a 429 response straight away. It was assumed this was just to do with the API rate limiting, but it seemed to been related to the User-Agent and was a WAF 429 rather than a specific API 429. It now sets a specific user agent of `waymore by xnl-h4ck3r` which always works for now.
+
+- v5.0
+
+  - New
+
+    - Add source **Intelligence X - intelx.io**. It requires a paid API key to do the `/phonebook/search` through their API (as of 2024-09-01, the Phonebook service has been restricted to paid users due to constant abuse by spam accounts).
+    - Add argument `-xix` to exclude checks for links from Intelligence X (intelx.io).
+    - Add `INTELX_API_KEY` to `config.yml`.
+
+- v4.9
+
+  - Changed
+
+    - BUG FIX: The error `ERROR combineInlineJS 1: local variable 'fileNumber' referenced before assignment` is raised when there are external javascript files provided via `src` but no inline javascript sections. The correct message will be displayed now without an error being raised.
+    - BUG FIX: If a status code filter does not include `404` (whether specified in `config.yml` or changed via `-fc` or `-mc`) then the logic was causing a response to not be downloaded.
+    - BUG FIX: When downloading responses, the URL needs to all be in lower case, regardless of the URL that the API returns that may have uppercase characters. This resulted in some responses not being found and failing to download.
+
+- v4.8
+
+  - Changed
+
+    - BUG FIX: When downloading responses and creating the file name, sometimes the file extension is incorrectly derived and has `/` in it, e.g. `5146045725697.well-known/openid-configuration`, and this causes the writing of the file to fail. If the derived extension does contain `/` then it will be reset to blank, and determined a different way.
+
+- v4.7
+
+  - New
+
+    - BUG FIX: If an input domain has unicode in, e.g `xñl.uk`, then it will be converted to the punycode version, e.g. `xn--xl-zja.uk` to use that as the input instead. This will ensure the URLs and responses are correctly retrieved from the archive sources.
+
+- v4.6
+
+  - New
+
+    - Add argument `-ft` to specify a list of MIME Types to filter. This will override the `FILTER_MIME` list in `config.yml`. **NOTE: This will NOT be applied to Alien Vault OTX and Virus Total because they don't have the ability to filter on MIME Type. Sometimes URLScan does not have a MIME Type defined - these will always be included. Consider excluding sources if this matters to you.**.
+    - Add argument `-mt` to specify a list of MIME Types to match. This will be used instead of the default filtering using `FILTER_MIME` list in `config.yml`, or filtering using `-ft`. **NOTE: This will NOT be applied to Alien Vault OTX and Virus Total because they don't have the ability to filter on MIME Type. Sometimes URLScan does not have a MIME Type defined - these will always be included. Consider excluding sources if this matters to you.**.
+    - Add argument `--providers` in the same way as `gau`. A comma separated list of source providers that you want to get URLs from. The values can be `wayback`,`commoncrawl`,`otx`,`urlscan` and `virustotal`. Passing this will override any exclude arguments (e.g. `-xwm`,`-xcc`, etc.) passed to exclude sources, and reset those based on what was passed with this argument.
+
+  - Changed
+
+    - When argument `--verbose` has been used and the options are shown, show the name of providers that will be searched instead of the exclude arguments, e.g.`-xwm`, `-xcc`, etc.
+    - Change `HTTP_ADAPTER_CC` used for Common Crawl requests to use `retries+3` instead of `reties+20`. This was originally suggested by Common Crawl, but there are so many issues it can just take forever to get anything from their API, and often fail anyway.
+    - Change the default of `-lcc` to 1 instead of 3 because of so many problems with Common Crawl.
+    - BUG FIX: If a connection error occurs when getting the Common Crawl index file, then error `ERROR getCommonCrawlUrls 1: object of type 'NoneType' has no len()` is displayed. This will now be suppressed.
+    - BUG FIX: If arg `-mc` was not passed and `-ft` was, when options were shown to the user (in `showOptions` function), the value of `-mc` was shown for `-ft`.
+    - BUG FIX: When a MIME type is used in a filter for Wayback Machine that has a `+` in it (e.g. `image/svg+xml`), then the `+` was replaced because that'#s the only way Wayback recognises it. However, it was being escaped first and was being converted to `image/svg\.xml` instead of `image/svg.xml` so was not recognised in the filter.
+
+- v4.5
+
+  - Change
+
+    - BUG FIX: When `-f`/`--filter-responses-only` is used, and retrieving Wayback Archive links, the links were still being filtered for URL exclusions, e.g. the extensions. This has been fixed and should return more links in that situation.
+    - BUG FIX: If there is an invalid response from Alien Vault, then the error `ERROR: getAlienVaultUrls 1: Expecting value: line 1 column 1 (char 0)` is raised. This will be handled properly.
+    - BUG FIX: If there is an invalid response from URLScan, then the error `ERROR getURLScanUrls 1: local variable 'jsonResp' referenced before assignment` is raised. This will be handled properly.
+    - BUG FIX: If there is an invalid response from Virus Total, then the error `ERROR getVirusTotalUrls 1: Expecting value: line 1 column 1 (char 0)` is raised. This will be handled properly.
+    - BUG FIX: When retrieving links from the Wayback Archive, and the user presses Ctrl-C to cancel the program, the error `[ ERR ] Error getting response for page  - local variable 'resp' referenced before assignment` was displayed. This will no longer be shown.
+
 - v4.4
 
   - New
 
     - When using `-mode R`, if input was used that does find results, but then those reults don't match the input given, then display a message. For example, if input is `www.hackerone.com/xnl` then wayback machine returns links for `http://hackerone.com/xnl` (without the `www.`). These don't match so aren't returned, but a message will give the user and clue as to what to change the input to if they did want those.
-    
+
   - Changed
 
     - BUG FIX:Rewrite the logic in `linksFoundAdd` and correct a typo that always made a runtime error occur and always add a link, without doing the check to see if the domain matches what was searched for (it's rare other URLs are included anyway). Also use new `linksFoundResponseAdd` with similar logic, but remove the prefixed timestamp which occurs with response links.
