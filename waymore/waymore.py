@@ -1671,7 +1671,7 @@ def getURLScanDOM(originalUrl, domUrl):
             try:
                 try:
                     # Choose a random user agent string to use for any requests
-                    userAgent = "waymore v"+__version__+" by xnl-h4ck3r" 
+                    userAgent = random.choice(USER_AGENT)
                     session = requests.Session()
                     session.mount('https://', HTTP_ADAPTER)
                     session.mount('http://', HTTP_ADAPTER)
@@ -1862,7 +1862,7 @@ def getURLScanUrls():
             # For other sources we would use `random.choice(USER_AGENT)` to asignn a random user-agent, but it seems 
             # that there are a handful of those that ALWAYS return 429. Passing a specific one all the time seems to
             # be successful all the time 
-            userAgent = "waymore v"+__version__+" by xnl-h4ck3r"  
+            userAgent = random.choice(USER_AGENT)  
             session = requests.Session()
             session.mount('https://', HTTP_ADAPTER)
             session.mount('http://', HTTP_ADAPTER)
